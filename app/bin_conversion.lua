@@ -5,7 +5,7 @@ require("cord")
 
 local shield = require("starter") -- interfaces for resources on starter shield
 
-local display = shield.TTSDisplay
+local display = shield.Display
 local n = 0
 local led_list = {} --TODO: list of button pins
 
@@ -27,7 +27,7 @@ end
 n = 5
 
 --TODO: change 'n' in response to button press or time
-display.num(n)
+display:num(n)
 display_bin(n)
 
 cord.enter_loop() -- start event/sleep loop

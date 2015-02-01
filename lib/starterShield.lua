@@ -105,14 +105,14 @@ Button.wait = function(button)
 end
 
 --------------------------------------------------------------------------------
--- TTSDisplay module
+-- Display module
 -- provides access to the 7-segment display
 --------------------------------------------------------------------------------
 require("bit")
 
 -- ported from: https://github.com/Seeed-Studio/Starter_Shield/blob/master/libraries/TickTockShieldV2/TTSDisplay.cpp
 
-local TTSDisplay = {}
+local Display = {}
 
 -- TODO: these pins probably need to be changed for the firestorm board
 -- default pin values
@@ -147,20 +147,20 @@ local pinmode = storm.io.set_mode
 local INPUT = storm.io.INPUT
 local OUTPUT = storm.io.OUTPUT
 
-function TTSDisplay.init(pinclk, pindata)
-   TTSDisplay.dtaDisplay = {0,0,0,0}
-   TTSDisplay.Clkpin = pinclk or PINCLK
-   TTSDisplay.Datapin = pindata or PINDTA
-   storm.io.set_mode(OUTPUT, TTSDisplay.Clkpin)
-   storm.io.set_mode(OUTPUT, TTSDisplay.Datapin)
+function Display.init(pinclk, pindata)
+   Display.dtaDisplay = {0,0,0,0}
+   Display.Clkpin = pinclk or PINCLK
+   Display.Datapin = pindata or PINDTA
+   storm.io.set_mode(OUTPUT, Display.Clkpin)
+   storm.io.set_mode(OUTPUT, Display.Datapin)
 
-   TTSDisplay:set()
+   Display:set()
    --clear()
 end
 
 -- displays a num in certain location
 -- parameter loca - location: 3-2-1-0
-function TTSDisplay.display(self, loca, dta)
+function Display.display(self, loca, dta)
 
    if loca > 3 or loca < 0 then
       return
@@ -184,7 +184,7 @@ function TTSDisplay.display(self, loca, dta)
 end
 
 --  display a number in range 0 - 9999
-function TTSDisplay.num(self, dta)
+function Display.num(self, dta)
 
    if dta < 0 or dta > 9999 then
       return
@@ -215,7 +215,7 @@ function TTSDisplay.num(self, dta)
    end
 end
 
-function TTSDisplay.time(self, hour, min)
+function Display.time(self, hour, min)
    if hour > 24 or hour < 0 then
       return
    end
@@ -228,7 +228,7 @@ function TTSDisplay.time(self, hour, min)
    self:display(0, min % 10)
 end
 
-function TTSDisplay.clear(self)
+function Display.clear(self)
    self:display(0x00, 0x7f)
    self:display(0x01, 0x7f)
    self:display(0x02, 0x7f)
@@ -237,7 +237,7 @@ end
 
 
 --  write a byte to tm1636
-function TTSDisplay.writeByte(self, wr_data)
+function Display.writeByte(self, wr_data)
    local i, count1
    local dpin = self.Datapin
    local cpin = self.Clkpin
@@ -271,8 +271,8 @@ function TTSDisplay.writeByte(self, wr_data)
    pinmode(OUTPUT, dpin)
 end
 
---  send start signal to TTSDisplay
-function TTSDisplay.start(self)
+--  send start signal to Display
+function Display.start(self)
    setpin(HIGH, self.Clkpin)  --send start signal to TM1637
    setpin(HIGH, self.Datapin)
    setpin(LOW, self.Datapin)
@@ -280,14 +280,14 @@ function TTSDisplay.start(self)
 end
 
  -- sends end signal
-function TTSDisplay.stop(self)
+function Display.stop(self)
    setpin(LOW, self.Clkpin)
    setpin(LOW, self.Datapin)
    setpin(HIGH, self.Clkpin)
    setpin(HIGH, self.Datapin)
 end
 
-function TTSDisplay.set(self, brightness, SetData, SetAddr)
+function Display.set(self, brightness, SetData, SetAddr)
    brightness = brightness or BRIGHT_TYPICAL
    self._brightness = brightness
    self.Cmd_SetData = SetData or 0x40
@@ -295,7 +295,7 @@ function TTSDisplay.set(self, brightness, SetData, SetAddr)
    self.Cmd_Dispdisplay = 0x88 + brightness
 end
 
-function TTSDisplay.pointOn()
+function Display.pointOn()
    local _PointFlag = 1
    local dtaDisplay = self.dtaDisplay
    for i=1,3 do
@@ -303,7 +303,7 @@ function TTSDisplay.pointOn()
    end
 end
 
-function TTSDisplay.pointOff()
+function Display.pointOff()
    local _PointFlag = 0
    local dtaDisplay = self.dtaDisplay
    for i=0,4 do
@@ -330,7 +330,7 @@ end
 shield.LED = LED
 shield.Buzz = Buzz
 shield.Button = Button
-shield.TTSDisplay = TTSDisplay
+shield.Display = Display
 return shield
 
 
