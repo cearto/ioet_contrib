@@ -298,7 +298,7 @@ end
 function Display.pointOn()
    local _PointFlag = 1
    local dtaDisplay = self.dtaDisplay
-   for i=1,3 do
+   for i=1,4 do
       self:display(i, dtaDisplay[i])
    end
 end
@@ -306,7 +306,7 @@ end
 function Display.pointOff()
    local _PointFlag = 0
    local dtaDisplay = self.dtaDisplay
-   for i=0,4 do
+   for i=1,4 do
       self:display(i, dtaDisplay[i])
    end
 end
