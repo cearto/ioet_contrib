@@ -7,7 +7,11 @@ local shield = require("starter") -- interfaces for resources on starter shield
 
 local display = shield.Display
 local n = 0
-local led_list = {} --TODO: list of button pins
+local led_list = {storm.io.D2, storm.io.D3, storm.io.D4, storm.io.D5}
+
+for i=1,3 do
+   storm.io.set_mode(storm.io.OUTPUT, led_list[i])
+end
 
 display.init()
 
