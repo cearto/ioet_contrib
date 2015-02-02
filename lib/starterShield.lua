@@ -25,9 +25,9 @@ LED.pins = {["blue"]="D2",["green"]="D3",["red"]="D4",["red2"]="D5"}
 LED.start = function()
 -- configure LED pins for output
    storm.io.set_mode(storm.io.OUTPUT, storm.io.D2,
-		     storm.io.D3,
-		     storm.io.D4,
-		     storm.io.D5)
+           storm.io.D3,
+           storm.io.D4,
+           storm.io.D5)
 end
 
 LED.stop = function()
@@ -37,32 +37,53 @@ end
 -- LED color functions
 -- These should rarely be used as an active LED burns a lot of power
 LED.on = function(color)
-   storm.io.set(1,storm.io[LED.pins[color]])
+   local pin = LED.pins[color] or LED.pins["red2"]
+   storm.io.set(1, storm.io[pin])
 end
 LED.off = function(color)
-   storm.io.set(0,storm.io[LED.pins[color]])
+   local pin = LED.pins[color] or LED.pins["red2"]
+   storm.io.set(0, storm.io[pin])
 end
 
 -- Flash an LED pin for a period of time
 --    unspecified duration is default of 10 ms
 --    this is dull for green, but bright for read and blue
 --    assumes cord.enter_loop() is in effect to schedule filaments
-LED.flash=function(color,duration)
--- TODO
+LED.flash = function(color, duration)
+   local pin = LED.pins[color] or LED.pins["red2"]
+   duration = duration or 10
+   LED.on(color)
+   storm.os.invokeLater(duration * storm.os.MILLISECOND, function()
+      LED.off(color)
+   end)
+   -- ASYNC SOLUTION
+   -- cord.new( function()
+    --  cord.await(storm.os.invokeLater, duration * storm.os.MILLISECOND)
+   --      -- LED.off(color)
+   --    end)   
 end
+
 
 ----------------------------------------------
 -- Buzz module
 -- provide basic buzzer functions
 ----------------------------------------------
 local Buzz = {}
+Buzz.init = function()
+   storm.io.set_mode(storm.io.OUTPUT, storm.io.D6)
+end
 
 Buzz.go = function(delay)
--- TODO
+   handle = cord.new(function()
+      storm.io.set(1, storm.io.D6)
+      cord.await(storm.os.invokeLater, delay * storm.os.MILLISECOND)
+      storm.io.set(0, storm.io.D6)
+      end
+   )
 end
 
 Buzz.stop = function()
--- TODO
+   storm.io.set(0, storm.io.D6)
 end
 
 ----------------------------------------------
@@ -71,14 +92,26 @@ end
 ----------------------------------------------
 local Button = {}
 
+local button_map = { right = "D9",
+            center = "D10",
+            left = "D11"
+         }
+
+-- sets all the pins to be in the correct modes
+
 Button.start = function() 
--- TODO
+   for k, pin in pairs(button_map) do
+     storm.io.set_mode(storm.io.INPUT, storm.io[pin])
+     storm.io.set_pull(storm.io.PULL_UP, storm.io[pin])
+   end
 end
 
 -- Get the current state of the button
 -- can be used when poling buttons
+-- returns true if the button is pressed
+
 Button.pressed = function(button) 
--- TODO
+   return storm.io.get(storm.io[button_map[button]]) == 0 
 end
 
 -------------------
@@ -92,18 +125,64 @@ end
 -- must be used with cord.enter_loop
 -- none of these are debounced.
 -------------------
+
+Button.transitions = {
+   falling = storm.io.FALLING,
+   rising  = storm.io.RISING,
+   change  = storm.io.CHANGE
+}
+
+-- case-insensitive transition validator
+local valid_transition = function(transition)
+   if not Button.transitions[string.lower(transition)] then
+      error("invalid transition")
+   end
+   return true
+end
+
+-- runs the action function whenever the given transition occurs on that pin
 Button.whenever = function(button, transition, action)
--- TODO
+   if not valid_transition(transition) then return end
+
+   behavior = Button.transitions[string.lower(transition)]
+   storm.io.watch_all(behavior, storm.io[button_map[button]], action)
 end
 
+local button_handles = {
+   left = nil,
+   center = nil,
+   right = nil
+}
+
+Button.deregister = function()
+   for button, handle in pairs(button_handles) do
+      if(handle) then 
+         storm.io.cancel_watch(handle)
+         button_handles[button] = nil 
+      end
+   end
+end
+
+-- like whenever() but only run it once, then deregister
 Button.when = function(button, transition, action)
--- TODO
+   if not valid_transition(transition) then return end
+
+   local behavior = Button.transitions[string.lower(transition)]
+   local resolved_button = storm.io[button_map[button]]
+   
+   local update_handles_and_act = function()
+      action()
+      button_handles[button] = nil
+   end
+   button_handles[button] = storm.io.watch_single(behavior, resolved_button, update_handles_and_act);
 end
 
+-- if called in a cord, wait until the button is pressed
 Button.wait = function(button)
--- TODO
+   return cord.new(function()
+      cord.await(storm.io.watch_single, storm.io.FALLING, storm.io[button_map[button]])
+   end)
 end
-
 --------------------------------------------------------------------------------
 -- Display module
 -- provides access to the 7-segment display
