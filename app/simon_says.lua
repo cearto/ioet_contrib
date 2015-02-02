@@ -1,3 +1,8 @@
+-- Implementation of the Simon Says Game
+-- Storm generates a pattern, then prompts the user to repeat
+-- Who will run out of memory first!!?!?
+
+
 require("storm") -- libraries for interfacing with the board and kernel
 require("cord") -- scheduler / fiber library
 shield = require("starter") -- interfaces for resources on starter shield
