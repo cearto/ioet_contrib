@@ -30,7 +30,7 @@ cord.await = function(f, ...)
     local args = {...}
     args[#args+1] = function (...)
         cord._cors[aidx].s=cord._PROMISEDONE
-        cord._cors[aidx].rv={...}
+        cord._cors[aidx].rv={... }
     end
     f(unpack(args))
     return coroutine.yield()
@@ -38,31 +38,54 @@ end
 
 cord.enter_loop = function ()
     while true do
-        local ranone = false
+        local ro = false
+        local s
         for i,v in pairs(cord._cors) do
-            if (v.s == cord._READY) then
-                ranone = true
+            if v.s == cord._READY or v.s == cord._PROMISEDONE then
+                ro = true
                 cord._activeidx = i
-                coroutine.resume(v.c)
-                if (coroutine.status(v.c) == "dead" or v.k) then
-                    cord._cors[i] = nil
-                end
-            elseif (v.s == cord._PROMISEDONE) then
-                cord._activeidx = i;
                 v.s = cord._READY
-                coroutine.resume(v.c, unpack(v.rv))
+                if v.rv ~= nil then
+                    s, v.t, v.x, v.a = coroutine.resume(v.c,unpack(v.rv))
+                else
+                    s, v.t, v.x, v.a = coroutine.resume(v.c)
+                end
+                if not s then
+                    print (v.t)
+                end
                 if (coroutine.status(v.c) == "dead" or v.k) then
                     cord._cors[i] = nil
                 end
             end
         end
-        storm.os.kyield()
-        if ranone then
+        collectgarbage("collect")
+        if ro then
             storm.os.run_callback()
         else
             storm.os.wait_callback() -- go to sleep
         end
     end
+end
+
+cord.nc = function(f, ...)
+    local c = cord._cors[cord._activeidx]
+    f(...) -- call the head function
+    while c.t ~= nil do --while there is a tail function
+        t = c.t
+        if t == -1 then
+            return unpack(c.x)
+        end
+        --if there is a target function, call it
+        local r = {}
+        if c.x then
+            r = {c.x(unpack(c.a))} --call it
+        end
+        t(unpack(r))
+    end
+end
+
+cord.ncw = function(f)
+    return function(...) cord.nc(f, unpack({...})) end
 end
 
 cord.yield = function()
